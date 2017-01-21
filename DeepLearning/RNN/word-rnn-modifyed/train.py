@@ -11,25 +11,27 @@ from six.moves import cPickle
 from utils import TextLoader
 from model import Model
 
+import sys
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', type=str, default='data/tinyshakespeare',
+    parser.add_argument('--data_dir', type=str, default='data/tiny',
                         help='data directory containing input.txt')
     parser.add_argument('--save_dir', type=str, default='save',
                         help='directory to store checkpointed models')
-    parser.add_argument('--rnn_size', type=int, default=256,
+    parser.add_argument('--rnn_size', type=int, default=4,
                         help='size of RNN hidden state')
     parser.add_argument('--num_layers', type=int, default=2,
                         help='number of layers in the RNN')
-    parser.add_argument('--model', type=str, default='lstm',
+    parser.add_argument('--model', type=str, default='rnn',
                         help='rnn, gru, or lstm')
-    parser.add_argument('--batch_size', type=int, default=50,
+    parser.add_argument('--batch_size', type=int, default=3,
                         help='minibatch size')
-    parser.add_argument('--seq_length', type=int, default=25,
+    parser.add_argument('--seq_length', type=int, default=3,
                         help='RNN sequence length')
     parser.add_argument('--num_epochs', type=int, default=50,
                         help='number of epochs')
-    parser.add_argument('--save_every', type=int, default=1000,
+    parser.add_argument('--save_every', type=int, default=100,
                         help='save frequency')
     parser.add_argument('--grad_clip', type=float, default=5.,
                         help='clip gradients at this value')
@@ -40,17 +42,40 @@ def main():
     parser.add_argument('--init_from', type=str, default=None,
                         help="""continue training from saved model at this path. Path must contain files saved by previous training process:
                             'config.pkl'        : configuration;
-                            'words_vocab.pkl'   : vocabulary definitions;
+                            'vocab.pkl'   : vocabulary definitions;
                             'checkpoint'        : paths to model file(s) (created by tf).
                                                   Note: this file contains absolute paths, be careful when moving files around;
                             'model.ckpt-*'      : file(s) with model definition (created by tf)
                         """)
     args = parser.parse_args()
+
+    print("batch_size:", args.batch_size)
+    print("seq_length:", args.seq_length)
     train(args)
 
 def train(args):
     data_loader = TextLoader(args.data_dir, args.batch_size, args.seq_length)
     args.vocab_size = data_loader.vocab_size
+
+    print("data_loader.vocab")
+    for item in data_loader.vocab.items():
+        print("{0:10s}:{1:2d}".format(item[0], item[1]))
+
+    print("data_loader.words")
+    for item in data_loader.words:
+        print("{0:10s}".format(item))
+
+    print("data_loader.vocab_size:", data_loader.vocab_size)
+    print()
+
+    print("data_loader.tensor", data_loader.tensor)
+    print()
+
+    print("data_loader.num_batches", data_loader.num_batches)   # tensor.size / (batch_size * seq_length) = 6 / (2 * 3)
+    print()
+
+    print("data_loader.x_batches", data_loader.x_batches)
+    print("data_loader.y_batches", data_loader.y_batches)
 
     # check compatibility if training is continued from previously saved model
     if args.init_from is not None:
